@@ -1,0 +1,5 @@
+{
+    "name": "Proposal Review Dashboard",
+    "description": "An elegant and efficient application for browsing, filtering, and managing proposals. Users can view proposal details, search by keywords, filter by status, and approve or reject submissions.",
+    "requestFramePermissions": []
+  }
