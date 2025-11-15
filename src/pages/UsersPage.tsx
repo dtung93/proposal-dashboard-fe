@@ -54,8 +54,8 @@ const UsersPage: React.FC<UsersPageProps> = ({ users, onAddUser, onEditUser, onD
                                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{user.role}</span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{user.dept}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{user.managerEmail || 'N/A'}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-gray-700 dark:text-gray-300">{formatCurrency(user.approvalLimit)}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{user.managerId || 'N/A'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-gray-700 dark:text-gray-300">{formatCurrency(500000)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onClick={() => onEditUser(user)} className="p-1 text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2" title="Edit User">
                                         <PencilIcon className="w-5 h-5" />
@@ -69,13 +69,6 @@ const UsersPage: React.FC<UsersPageProps> = ({ users, onAddUser, onEditUser, onD
                     </tbody>
                 </table>
             </div>
-             <style>{`
-              @keyframes fade-in {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-              .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
-            `}</style>
         </div>
     );
 };

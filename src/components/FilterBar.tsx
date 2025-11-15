@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProposalType, ProposalWorkflowStatus } from '../types';
+import { ProposalType, ProposalStatus } from '../types';
 import { SearchIcon } from '../icons/SearchIcon';
 import DateRangeFilter from './DateRangeFilter';
 
@@ -37,7 +37,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 <input
                     id="search-proposals"
                     type="text"
-                    placeholder="Search by title, proposer, or ID..."
+                    placeholder="Tìm kiếm theo tên đề xuất, người đề xuất, trạng thái..."
                     value={searchTerm}
                     onChange={(e) => onSearchTermChange(e.target.value)}
                     className="form-input pl-10"
@@ -53,8 +53,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     onChange={(e) => onStatusFilterChange(e.target.value)}
                     className="form-input"
                 >
-                    <option value="">All Statuses</option>
-                    {Object.values(ProposalWorkflowStatus).map(status => (
+                    <option value="">Tình trạng</option>
+                    {Object.values(ProposalStatus).map(status => (
                         <option key={status} value={status}>{status}</option>
                     ))}
                 </select>
@@ -62,14 +62,14 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
             {/* Type Filter */}
             <div>
-                <label htmlFor="type-filter" className="sr-only">Filter by type</label>
+                <label htmlFor="type-filter" className="sr-only">Kiểu</label>
                 <select 
                     id="type-filter"
                     value={typeFilter}
                     onChange={(e) => onTypeFilterChange(e.target.value)}
                     className="form-input"
                 >
-                    <option value="">All Types</option>
+                    <option value="">Mục</option>
                     {Object.values(ProposalType).map(type => (
                         <option key={type} value={type}>{type}</option>
                     ))}

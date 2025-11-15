@@ -1,226 +1,439 @@
-import React, { useState, useEffect } from 'react';
-import { Proposal, ProposalType, User } from '../types';
-import { CloseIcon } from '../icons/CloseIcon';
-import { PlusIcon } from '../icons/PlusIcon';
-import { PaperClipIcon } from '../icons/PaperClipIcon';
-import { PencilIcon } from '../icons/PencilIcon';
+import React, { useState, useEffect } from "react";
+import { Proposal, ProposalType, ProposalTypeLabels, User } from "../types";
+import { CloseIcon } from "../icons/CloseIcon";
+import { PlusIcon } from "../icons/PlusIcon";
+import { PaperClipIcon } from "../icons/PaperClipIcon";
+import { PencilIcon } from "../icons/PencilIcon";
+import { XIcon } from "../icons/XIcon";
+import {
+  ALLOWED_FILE_TYPES,
+  MAX_FILE_SIZE_MB,
+  MAX_FILES,
+  MAX_TOTAL_SIZE_MB,
+} from "../constants";
+import { useToast } from "../services/useToast";
+import { useConfirmModal } from "../services/ConfirmModalContext";
 
 interface ProposalFormModalProps {
-  mode: 'new' | 'edit' | 'resubmit';
+  mode: "new" | "edit" | "resubmit";
   initialData?: Proposal;
   currentUser: User;
   onClose: () => void;
-  onSave: (proposalData: Omit<Proposal, 'proposalId' | 'status' | 'submittedDate' | 'proposerId' | 'approvalHistory'>, mode: 'new' | 'edit' | 'resubmit', proposalId?: string) => void;
+  onSave: (
+    proposalData: Omit<
+      Proposal,
+      | "id"
+      | "proposalId"
+      | "status"
+      | "submittedDate"
+      | "proposerId"
+      | "approvalHistory"
+    >,
+    mode: "new" | "edit" | "resubmit",
+    proposalId?: number,
+    attachments?: File[]
+  ) => void;
 }
 
-const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ mode, initialData, currentUser, onClose, onSave }) => {
-    const [title, setTitle] = useState('');
-    const [proposer, setProposer] = useState('');
-    const [organization, setOrganization] = useState('');
-    const [budget, setBudget] = useState('');
-    const [type, setType] = useState<ProposalType>(ProposalType.OTHER);
-    const [summary, setSummary] = useState('');
-    const [fullText, setFullText] = useState('');
-    const [attachment, setAttachment] = useState<File | null>(null);
-    const [existingAttachment, setExistingAttachment] = useState(initialData?.attachment);
+const ProposalFormModal: React.FC<ProposalFormModalProps> = ({
+  mode,
+  initialData,
+  currentUser,
+  onClose,
+  onSave,
+}) => {
+  const [title, setTitle] = useState("");
+  const [proposer, setProposer] = useState<User | null>(null);
+  const [dept, setDept] = useState("");
+  const [budget, setBudget] = useState("");
+  const [type, setType] = useState<ProposalType>(ProposalType.Other);
+  const [summary, setSummary] = useState("");
+  const [fullText, setFullText] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const { handleOpenConfirmModal } = useConfirmModal();
 
-    useEffect(() => {
-        if (mode === 'new') {
-            setProposer(currentUser.name);
-        }
-        if (initialData) {
-            setTitle(initialData.title);
-            setProposer(initialData.proposer);
-            setOrganization(initialData.organization);
-            setBudget(initialData.budget.toString());
-            setType(initialData.type);
-            setSummary(initialData.summary);
-            setFullText(initialData.fullText);
-            setExistingAttachment(initialData.attachment)
-        }
-    }, [initialData, mode, currentUser]);
+  const { addToast } = useToast();
 
-    const isFormValid = title && proposer && organization && budget && summary && fullText;
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!isFormValid) return;
-
-        let attachmentData;
-        if (attachment) { // New file is attached
-            attachmentData = { name: attachment.name, size: attachment.size, type: attachment.type };
-        } else if (existingAttachment) { // Existing file is kept
-            attachmentData = existingAttachment;
-        }
-
-
-        const proposalData: Omit<Proposal, 'proposalId' | 'status' | 'submittedDate' | 'proposerId' | 'approvalHistory'> = {
-            title,
-            proposer,
-            organization,
-            budget: Number(budget),
-            type,
-            summary,
-            fullText,
-            ...(attachmentData && { attachment: attachmentData }),
-        };
-        onSave(proposalData, mode, initialData?.proposalId);
-    };
-    
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setAttachment(e.target.files[0]);
-            setExistingAttachment(undefined); // Clear existing attachment if new one is selected
-        }
-    };
-    
-    const removeAttachment = () => {
-        setAttachment(null);
-        setExistingAttachment(undefined);
-    };
-
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  useEffect(() => {
+    if (mode === "new") {
+      setProposer(currentUser.name as any);
+      setDept(currentUser.dept);
     }
-    
-    const currentAttachment = attachment ? { name: attachment.name, size: attachment.size } : existingAttachment;
-    
-    const modalTitle = {
-        new: 'Create New Proposal',
-        edit: 'Edit Proposal',
-        resubmit: 'Edit and Re-submit Proposal'
-    }[mode];
+    if (initialData) {
+      setTitle(initialData.title);
+      setProposer(initialData.proposer);
+      setDept(initialData.dept);
+      setBudget(initialData.budget.toString());
+      setType(initialData.type);
+      setSummary(initialData.summary);
+      setFullText(initialData.fullText);
+    }
+  }, [initialData, mode, currentUser]);
 
-    const submitButtonText = {
-        new: 'Submit Proposal',
-        edit: 'Save Changes',
-        resubmit: 'Re-submit Proposal'
-    }[mode];
+  const isFormValid =
+    title && proposer && dept && budget && summary && fullText;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid) return;
+
+    const confirmed = await handleOpenConfirmModal({
+      title:
+        mode === "new"
+          ? "Gửi Đề Xuất"
+          : mode === "edit"
+          ? "Save Changes"
+          : "Duyệt Đề Xuất",
+      message:
+        mode === "new"
+          ? "Xác nhận gửi đề xuất"
+          : mode === "edit"
+          ? "Are you sure you want to save changes?"
+          : "Are you sure you want to re-submit this proposal?",
+      confirmText: "Yes",
+      cancelText: "No",
+    });
+
+    if (confirmed) {
+      const proposalData: Omit<
+        Proposal,
+        | "id"
+        | "proposalId"
+        | "status"
+        | "submittedDate"
+        | "proposerId"
+        | "approvalHistory"
+      > = {
+        title,
+        proposer,
+        dept,
+        deptId: currentUser.deptId,
+        budget: Number(budget),
+        type,
+        summary,
+        fullText,
+      };
+      proposalData.type = getTypeKey(proposalData.type) as ProposalType;
+      onSave(proposalData, mode, initialData?.proposalId, attachments);
+    } else {
+      onClose();
+    }
+  };
+
+  function getTypeKey(type: string): String {
+    switch (type) {
+      case "Lương Thưởng":
+        return "Salary_Bonus";
+      case "Marketing":
+        return "Marketing";
+      case "Vật Tư":
+        return "Supplies";
+      case "Máy & Dụng Cụ":
+        return "Machinery_Equipment";
+      case "Văn Phòng":
+        return "Office";
+      case "Khác":
+        return "Other";
+      default:
+        throw new Error(`Unknown type label: ${type}`);
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const selectedFiles = Array.from(e.target.files);
+    const newAttachments = [...attachments, ...selectedFiles];
+
+    // Filter by allowed extensions
+    const invalidFiles = selectedFiles.filter((file) => {
+      const ext = "." + file.name.split(".").pop()?.toLowerCase();
+      return !ALLOWED_FILE_TYPES.includes(ext);
+    });
+
+    if (invalidFiles.length > 0) {
+      addToast(
+        `Các định dạng cho phép file Excel, Word, PDF hoặc ảnh`,
+        "error"
+      );
+      e.target.value = "";
+      return;
+    }
+    if (newAttachments.length > MAX_FILES) {
+      addToast(`Đính kèm tối đa ${MAX_TOTAL_SIZE_MB} file`, "error");
+      e.target.value = "";
+      return;
+    }
+
+    // Check per-file size
+    const oversizedFiles = selectedFiles.filter(
+      (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+    );
+    if (oversizedFiles.length > 0) {
+      addToast(`Dung lượng file tối đa ${MAX_FILE_SIZE_MB}MB`, "error");
+      e.target.value = "";
+      return;
+    }
+
+    // Check total size
+    const totalSizeMB =
+      newAttachments.reduce((sum, f) => sum + f.size, 0) / (1024 * 1024);
+    if (totalSizeMB > MAX_TOTAL_SIZE_MB) {
+      addToast(`Tổng dung lượng file vượt quá ${MAX_TOTAL_SIZE_MB}MB`, "error");
+      e.target.value = "";
+      return;
+    }
+
+    // All checks passed, update attachments
+    setAttachments(newAttachments);
+    e.target.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50 transition-opacity"
+      className="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="proposal-form-title"
     >
       <div
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col m-4 transform animate-scale-in"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col m-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <header className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
-          <h2 id="proposal-form-title" className="text-2xl font-bold text-gray-900 dark:text-white">{modalTitle}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {mode === "new"
+              ? "Bảng Tạo Đề Xuất Mới"
+              : mode === "edit"
+              ? "Edit Proposal"
+              : "Edit and Re-submit Proposal"}
+          </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
-            aria-label="Close modal"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
             <CloseIcon className="w-6 h-6" />
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="flex-grow flex flex-col">
-            <main className="p-6 overflow-y-auto flex-grow space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
-                        <input type="text" id="title" value={title} onChange={e => setTitle(e.target.value)} required className="form-input" />
-                    </div>
-                    <div>
-                        <label htmlFor="proposer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proposer</label>
-                        <input type="text" id="proposer" value={proposer} readOnly={mode==='new'} required className="form-input read-only:bg-gray-100 dark:read-only:bg-slate-700" />
-                    </div>
-                    <div>
-                        <label htmlFor="organization" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Organization</label>
-                        <input type="text" id="organization" value={organization} onChange={e => setOrganization(e.target.value)} required className="form-input" />
-                    </div>
-                     <div>
-                        <label htmlFor="budget" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngân sách (VND)</label>
-                        <input type="number" id="budget" value={budget} onChange={e => setBudget(e.target.value)} required className="form-input" min="0" />
-                    </div>
-                     <div>
-                        <label htmlFor="type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-                        <select id="type" value={type} onChange={e => setType(e.target.value as ProposalType)} required className="form-input">
-                            {Object.values(ProposalType).map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
-                </div>
-                 <div>
-                    <label htmlFor="summary" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Summary</label>
-                    <textarea id="summary" value={summary} onChange={e => setSummary(e.target.value)} required className="form-input" rows={3}></textarea>
-                </div>
-                <div>
-                    <label htmlFor="fullText" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Proposal Text</label>
-                    <textarea id="fullText" value={fullText} onChange={e => setFullText(e.target.value)} required className="form-input" rows={6}></textarea>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Attachment (Optional)</label>
-                    {!currentAttachment ? (
-                         <label htmlFor="attachment-input" className="relative cursor-pointer bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:border-indigo-500 transition-colors">
-                            <PaperClipIcon className="w-8 h-8 text-gray-400" />
-                            <span className="mt-2 text-sm text-gray-600 dark:text-gray-400">Click to upload a file</span>
-                            <input id="attachment-input" type="file" className="sr-only" onChange={handleFileChange} />
-                        </label>
-                    ) : (
-                        <div className="flex items-center gap-3 bg-gray-100 dark:bg-slate-700/50 p-3 rounded-lg">
-                            <PaperClipIcon className="w-6 h-6 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                            <div className="flex-grow">
-                                <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{currentAttachment.name}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{formatFileSize(currentAttachment.size)}</p>
-                            </div>
-                             <button type="button" onClick={removeAttachment} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 font-semibold text-sm">Remove</button>
-                        </div>
-                    )}
-                </div>
-            </main>
+        {/* Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-grow overflow-hidden"
+        >
+          <main className="p-6 flex-grow overflow-y-auto space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Title */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Tên Đề Xuất
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
 
-            <footer className="p-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 flex justify-end items-center gap-4 rounded-b-xl">
-                <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
-                    Cancel
-                </button>
-                <button type="submit" disabled={!isFormValid} className="px-5 py-2.5 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-slate-800 focus:ring-indigo-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {mode === 'new' ? <PlusIcon className="w-5 h-5"/> : <PencilIcon className="w-5 h-5" />} {submitButtonText}
-                </button>
-            </footer>
+              {/* Proposer */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Người đề xuất
+                </label>
+                <input
+                  type="text"
+                  value={currentUser ? currentUser.name : ""}
+                  readOnly
+                  className="form-input read-only:bg-gray-100 dark:read-only:bg-slate-700"
+                />
+              </div>
+
+              {/* Department */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Bộ Phận
+                </label>
+                <input
+                  readOnly
+                  type="text"
+                  value={dept}
+                  onChange={(e) => setDept(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+
+              {/* Budget */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Ngân Sách (VND)
+                </label>
+                <input
+                  type="number"
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  min="0"
+                  required
+                  className="form-input"
+                />
+              </div>
+
+              {/* Type */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Mục
+                </label>
+                <select
+                  value={type} // this is the enum key
+                  onChange={(e) => setType(e.target.value as ProposalType)}
+                  className="form-input"
+                >
+                  {Object.entries(ProposalTypeLabels).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Sơ Lược
+              </label>
+              <textarea
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                rows={3}
+                required
+                className="form-input"
+              />
+            </div>
+
+            {/* Full Text */}
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nội Dung
+              </label>
+              <textarea
+                value={fullText}
+                onChange={(e) => setFullText(e.target.value)}
+                rows={6}
+                required
+                className="form-input"
+              />
+            </div>
+
+            {/* Attachments */}
+            <div className="flex flex-col gap-2">
+              <label className="cursor-pointer flex items-center gap-1">
+                <PaperClipIcon className="w-5 h-5" /> File đính kèm
+                <input
+                  type="file"
+                  className="hidden"
+                  multiple
+                  onChange={handleFileChange}
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-1">
+                {attachments.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-1 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded"
+                  >
+                    <span className="truncate max-w-xs text-sm">
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(index)}
+                    >
+                      <XIcon className="w-3 h-3 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
+
+          {/* Footer */}
+          <footer className="p-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-lg bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600"
+            >
+              Hủy
+            </button>
+            {/* <button
+              type="submit"
+              disabled={!isFormValid}
+              className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white flex items-center gap-2 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {mode === "new" ? (
+                <PlusIcon className="w-5 h-5" />
+              ) : (
+                <PencilIcon className="w-5 h-5" />
+              )}
+              {mode === "new"
+                ? "Gửi yêu cầu"
+                : mode === "edit"
+                ? "Save Changes"
+                : "Re-submit Proposal"}
+            </button> */}
+            <button
+              type="button"
+              disabled={!isFormValid}
+              onClick={handleSubmit}
+              className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white flex items-center gap-2 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {mode === "new" ? (
+                <PlusIcon className="w-5 h-5" />
+              ) : (
+                <PencilIcon className="w-5 h-5" />
+              )}
+              {mode === "new"
+                ? "Gửi yêu cầu"
+                : mode === "edit"
+                ? "Save Changes"
+                : "Re-submit Proposal"}
+            </button>
+          </footer>
         </form>
       </div>
+
       <style>{`
-          .form-input {
-              display: block;
-              width: 100%;
-              padding: 0.625rem 0.75rem;
-              border: 1px solid;
-              border-color: rgb(209 213 219 / 1);
-              border-radius: 0.5rem;
-              background-color: rgb(249 250 251 / 1);
-              color: rgb(17 24 39 / 1);
-              transition: all 0.2s;
-          }
-          .dark .form-input {
-              border-color: rgb(51 65 85 / 1);
-              background-color: rgb(15 23 42 / 1);
-              color: rgb(226 232 240 / 1);
-          }
-          .form-input:focus {
-              outline: 2px solid transparent;
-              outline-offset: 2px;
-              --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-              --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-              box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-              border-color: rgb(99 102 241 / 1);
-              --tw-ring-color: rgb(99 102 241 / 1);
-          }
-           @keyframes scale-in {
-            from { transform: scale(0.95) translateY(10px); opacity: 0; }
-            to { transform: scale(1) translateY(0); opacity: 1; }
-          }
-          .animate-scale-in { animation: scale-in 0.2s ease-out forwards; }
-        `}</style>
+        .form-input {
+          display: block;
+          width: 100%;
+          padding: 0.625rem 0.75rem;
+          border: 1px solid rgb(209 213 219);
+          border-radius: 0.5rem;
+          background-color: rgb(249 250 251);
+          color: rgb(17 24 39);
+          transition: all 0.2s;
+        }
+        .dark .form-input {
+          border-color: rgb(51 65 85);
+          background-color: rgb(15 23 42);
+          color: rgb(226 232 240);
+        }
+        .form-input:focus {
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+          box-shadow: 0 0 0 2px rgb(99 102 241);
+          border-color: rgb(99 102 241);
+        }
+      `}</style>
     </div>
   );
 };

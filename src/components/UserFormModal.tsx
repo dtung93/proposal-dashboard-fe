@@ -1,54 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { User, UserRole } from '../types';
-import { CloseIcon } from '../icons/CloseIcon';
-import { PlusIcon } from '../icons/PlusIcon';
-import { PencilIcon } from '../icons/PencilIcon';
+import React, { useState, useEffect } from "react";
+import { User, UserRole } from "../types";
+import { CloseIcon } from "../icons/CloseIcon";
+import { PlusIcon } from "../icons/PlusIcon";
+import { PencilIcon } from "../icons/PencilIcon";
 
 interface UserFormModalProps {
-  mode: 'new' | 'edit';
+  mode: "new" | "edit";
   initialData?: User;
   onClose: () => void;
-  onSave: (userData: Omit<User, 'id'>, mode: 'new' | 'edit', userId?: string) => void;
+  onSave: (
+    userData: Omit<User, "id">,
+    mode: "new" | "edit",
+    userId?: number
+  ) => void;
 }
 
-const UserFormModal: React.FC<UserFormModalProps> = ({ mode, initialData, onClose, onSave }) => {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [role, setRole] = useState<UserRole>(UserRole.REQUESTER);
-    const [dept, setDept] = useState('');
-    const [managerEmail, setManagerEmail] = useState('');
-    const [approvalLimit, setApprovalLimit] = useState('');
+const UserFormModal: React.FC<UserFormModalProps> = ({
+  mode,
+  initialData,
+  onClose,
+  onSave,
+}) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<UserRole>(UserRole.STAFF);
+  const [dept, setDept] = useState("");
+  const [managerId, setManagerId] = useState("");
+  const [approvalLimit, setApprovalLimit] = useState("");
 
-    useEffect(() => {
-        if (initialData) {
-            setName(initialData.name);
-            setEmail(initialData.email);
-            setRole(initialData.role);
-            setDept(initialData.dept);
-            setManagerEmail(initialData.managerEmail || '');
-            setApprovalLimit(initialData.approvalLimit.toString());
-        }
-    }, [initialData]);
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name);
+      setEmail(initialData.email);
+      setRole(initialData.role);
+      setDept(initialData.dept);
+      setManagerId(initialData.managerId || "");
+    }
+  }, [initialData]);
 
-    const isFormValid = name && email && role && dept && approvalLimit;
+  const isFormValid = name && email && role && dept && approvalLimit;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!isFormValid) return;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid) return;
 
-        const userData: Omit<User, 'id'> = {
-            name,
-            email,
-            role,
-            dept,
-            managerEmail: managerEmail || undefined,
-            approvalLimit: Number(approvalLimit),
-        };
-        onSave(userData, mode, initialData?.id);
+    const userData: Omit<User, "id"> = {
+      staffId: "BAC-123",
+      name,
+      email,
+      role,
+      dept,
+      deptId: 1,
+      approvalLimit: 300,
+      managerId: managerId || undefined,
     };
-    
-    const modalTitle = mode === 'new' ? 'Create New User' : 'Edit User';
-    const submitButtonText = mode === 'new' ? 'Create User' : 'Save Changes';
+    onSave(userData, mode, initialData?.id);
+  };
+
+  const modalTitle = mode === "new" ? "Create New User" : "Edit User";
+  const submitButtonText = mode === "new" ? "Create User" : "Save Changes";
 
   return (
     <div
@@ -63,7 +73,12 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ mode, initialData, onClos
         onClick={(e) => e.stopPropagation()}
       >
         <header className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
-          <h2 id="user-form-title" className="text-2xl font-bold text-gray-900 dark:text-white">{modalTitle}</h2>
+          <h2
+            id="user-form-title"
+            className="text-2xl font-bold text-gray-900 dark:text-white"
+          >
+            {modalTitle}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -74,45 +89,133 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ mode, initialData, onClos
         </header>
 
         <form onSubmit={handleSubmit} className="flex-grow flex flex-col">
-            <main className="p-6 overflow-y-auto flex-grow space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-                        <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required className="form-input" />
-                    </div>
-                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                        <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required className="form-input" />
-                    </div>
-                     <div>
-                        <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
-                        <select id="role" value={role} onChange={e => setRole(e.target.value as UserRole)} required className="form-input">
-                            {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                    </div>
-                     <div>
-                        <label htmlFor="dept" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
-                        <input type="text" id="dept" value={dept} onChange={e => setDept(e.target.value)} required className="form-input" />
-                    </div>
-                     <div>
-                        <label htmlFor="managerEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manager's Email (Optional)</label>
-                        <input type="email" id="managerEmail" value={managerEmail} onChange={e => setManagerEmail(e.target.value)} className="form-input" />
-                    </div>
-                     <div>
-                        <label htmlFor="approvalLimit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Approval Limit (VND)</label>
-                        <input type="number" id="approvalLimit" value={approvalLimit} onChange={e => setApprovalLimit(e.target.value)} required className="form-input" min="0" />
-                    </div>
-                </div>
-            </main>
+          <main className="p-6 overflow-y-auto flex-grow space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Role
+                </label>
+                <select
+                  id="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  required
+                  className="form-input"
+                >
+                  {Object.values(UserRole).map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="dept"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Department
+                </label>
+                <input
+                  type="text"
+                  id="dept"
+                  value={dept}
+                  onChange={(e) => setDept(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="managerEmail"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Manager's Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  id="managerEmail"
+                  value={managerId}
+                  onChange={(e) => setManagerId(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="approvalLimit"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Approval Limit (VND)
+                </label>
+                <input
+                  type="number"
+                  id="approvalLimit"
+                  value={approvalLimit}
+                  onChange={(e) => setApprovalLimit(e.target.value)}
+                  required
+                  className="form-input"
+                  min="0"
+                />
+              </div>
+            </div>
+          </main>
 
-            <footer className="p-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 flex justify-end items-center gap-4 rounded-b-xl">
-                <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
-                    Cancel
-                </button>
-                <button type="submit" disabled={!isFormValid} className="px-5 py-2.5 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-slate-800 focus:ring-indigo-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {mode === 'new' ? <PlusIcon className="w-5 h-5"/> : <PencilIcon className="w-5 h-5" />} {submitButtonText}
-                </button>
-            </footer>
+          <footer className="p-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 flex justify-end items-center gap-4 rounded-b-xl">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 text-sm font-semibold rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!isFormValid}
+              className="px-5 py-2.5 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-slate-800 focus:ring-indigo-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {mode === "new" ? (
+                <PlusIcon className="w-5 h-5" />
+              ) : (
+                <PencilIcon className="w-5 h-5" />
+              )}{" "}
+              {submitButtonText}
+            </button>
+          </footer>
         </form>
       </div>
       <style>{`
